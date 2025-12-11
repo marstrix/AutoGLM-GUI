@@ -23,6 +23,7 @@ classifiers = [
 dependencies = [
     "fastapi>=0.124.0",
     "openai>=2.9.0",
+    "phone-agent",
     "pillow>=11.3.0",
     "uvicorn>=0.38.0",
 ]
@@ -43,6 +44,9 @@ packages = ["AutoGLM_GUI"]
 
 [tool.hatch.build.targets.sdist]
 include = ["AutoGLM_GUI/**/*"]
+
+[tool.uv.sources]
+phone-agent = { git = "https://github.com/zai-org/Open-AutoGLM.git", rev = "a3b8e83ee9012319b1fbfb8d4989b73c1435ee23" }
 
 [tool.hatch.build]
 artifacts = ["AutoGLM_GUI/static/**/*"]

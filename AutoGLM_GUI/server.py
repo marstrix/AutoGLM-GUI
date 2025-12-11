@@ -13,10 +13,10 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from AutoGLM_GUI.phone_agent import PhoneAgent
-from AutoGLM_GUI.phone_agent.adb import get_screenshot
-from AutoGLM_GUI.phone_agent.agent import AgentConfig
-from AutoGLM_GUI.phone_agent.model import ModelConfig
+from phone_agent import PhoneAgent
+from phone_agent.adb import get_screenshot
+from phone_agent.agent import AgentConfig
+from phone_agent.model import ModelConfig
 
 # 获取包版本号
 try:
@@ -63,6 +63,8 @@ class APIModelConfig(BaseModel):
 class APIAgentConfig(BaseModel):
     max_steps: int = 100
     device_id: str | None = None
+    lang: str = "cn"
+    system_prompt: str | None = None
     verbose: bool = True
 
 
@@ -133,6 +135,8 @@ async def init_agent(request: InitRequest) -> dict:
     agent_config = AgentConfig(
         max_steps=req_agent_config.max_steps,
         device_id=req_agent_config.device_id,
+        lang=req_agent_config.lang,
+        system_prompt=req_agent_config.system_prompt,
         verbose=req_agent_config.verbose,
     )
 
@@ -178,8 +182,9 @@ def chat_stream(request: ChatRequest):
     def event_generator():
         """SSE 事件生成器"""
         try:
-            # 使用 run_stream() 获取每步结果
-            for step_result in agent.run_stream(request.message):
+            # 使用 step() 逐步执行
+            step_result = agent.step(request.message)
+            while True:
                 # 发送 step 事件
                 event_data = {
                     "type": "step",
@@ -193,7 +198,6 @@ def chat_stream(request: ChatRequest):
                 yield f"event: step\n"
                 yield f"data: {json.dumps(event_data, ensure_ascii=False)}\n\n"
 
-                # 如果结束，发送 done 事件
                 if step_result.finished:
                     done_data = {
                         "type": "done",
@@ -204,6 +208,19 @@ def chat_stream(request: ChatRequest):
                     yield f"event: done\n"
                     yield f"data: {json.dumps(done_data, ensure_ascii=False)}\n\n"
                     break
+
+                if agent.step_count >= agent.agent_config.max_steps:
+                    done_data = {
+                        "type": "done",
+                        "message": "Max steps reached",
+                        "steps": agent.step_count,
+                        "success": step_result.success,
+                    }
+                    yield f"event: done\n"
+                    yield f"data: {json.dumps(done_data, ensure_ascii=False)}\n\n"
+                    break
+
+                step_result = agent.step()
 
             # 任务完成后重置
             agent.reset()

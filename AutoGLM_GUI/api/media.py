@@ -108,13 +108,17 @@ async def video_stream_ws(websocket: WebSocket, device_id: str | None = None):
             print(f"[video/stream] Reusing streamer for device {device_id}")
 
             streamer = scrcpy_streamers[device_id]
-            if streamer.cached_sps and streamer.cached_pps:
-                init_data = streamer.cached_sps + streamer.cached_pps
+            # CRITICAL: Send complete initialization data (SPS+PPS+IDR)
+            # Without IDR frame, decoder cannot start and will show black screen
+            init_data = streamer.get_initialization_data()
+            if init_data:
                 await websocket.send_bytes(init_data)
-                print(f"[video/stream] Sent SPS/PPS for device {device_id}")
+                print(
+                    f"[video/stream] Sent initialization data (SPS+PPS+IDR, {len(init_data)} bytes) for device {device_id}"
+                )
             else:
                 print(
-                    f"[video/stream] Warning: No cached SPS/PPS for device {device_id}"
+                    f"[video/stream] Warning: No cached initialization data for device {device_id}, client may need to wait for next IDR frame"
                 )
 
     streamer = scrcpy_streamers[device_id]

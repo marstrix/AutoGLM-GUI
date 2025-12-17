@@ -243,16 +243,20 @@ def reset_agent(request: ResetRequest) -> dict:
 @router.get("/api/config", response_model=ConfigResponse)
 def get_config_endpoint() -> ConfigResponse:
     """获取当前有效配置."""
-    config.refresh_from_env()
+    from AutoGLM_GUI.config_manager import merge_configs
 
-    # 判断配置来源
+    # 加载配置文件
     file_config = load_config_file()
+
+    # 合并配置（文件 > 默认值）
+    merged_config = merge_configs(file_config, None)
+
     source = "file" if file_config else "default"
 
     return ConfigResponse(
-        base_url=config.base_url,
-        model_name=config.model_name,
-        api_key_configured=(config.api_key != "EMPTY" and config.api_key != ""),
+        base_url=merged_config["base_url"],
+        model_name=merged_config["model_name"],
+        api_key=merged_config["api_key"] if merged_config["api_key"] != "EMPTY" else "",
         source=source,
     )
 

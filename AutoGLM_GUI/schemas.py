@@ -132,7 +132,7 @@ class ConfigResponse(BaseModel):
 
     base_url: str
     model_name: str
-    api_key_configured: bool  # 不返回实际值，只返回是否配置
+    api_key: str  # 返回实际值
     source: str  # "file" | "cli" | "default"
 
 

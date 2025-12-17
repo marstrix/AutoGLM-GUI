@@ -358,7 +358,7 @@ export async function sendTouchUp(
 export interface ConfigResponse {
   base_url: string;
   model_name: string;
-  api_key_configured: boolean;
+  api_key: string;
   source: string;
 }
 

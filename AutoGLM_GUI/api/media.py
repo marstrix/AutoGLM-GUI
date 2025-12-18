@@ -9,6 +9,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from AutoGLM_GUI.adb_plus import capture_screenshot
 from AutoGLM_GUI.logger import logger
 from AutoGLM_GUI.schemas import ScreenshotRequest, ScreenshotResponse
+from AutoGLM_GUI.exceptions import DeviceNotAvailableError
 from AutoGLM_GUI.scrcpy_stream import ScrcpyStreamer
 from AutoGLM_GUI.state import scrcpy_locks, scrcpy_streamers
 
@@ -159,14 +160,29 @@ async def video_stream_ws(
                     debug_file.write(init_data)
                     debug_file.flush()
 
+            except DeviceNotAvailableError as e:
+                logger.warning(f"Device {device_id} not available: {e}")
+                scrcpy_streamers[device_id].stop()
+                del scrcpy_streamers[device_id]
+                try:
+                    await websocket.send_json(
+                        {
+                            "error": str(e),
+                            "device_unavailable": True,
+                            "device_id": device_id,
+                        }
+                    )
+                except Exception as send_err:
+                    logger.debug(f"Failed to send error to WebSocket: {send_err}")
+                return
             except Exception as e:
                 logger.exception(f"Failed to start streamer: {e}")
                 scrcpy_streamers[device_id].stop()
                 del scrcpy_streamers[device_id]
                 try:
                     await websocket.send_json({"error": str(e)})
-                except Exception:
-                    pass
+                except Exception as send_err:
+                    logger.debug(f"Failed to send error to WebSocket: {send_err}")
                 return
         else:
             logger.info(f"Reusing streamer for device {device_id}")
@@ -214,8 +230,8 @@ async def video_stream_ws(
                 logger.error(f"ERROR: {error_msg}")
                 try:
                     await websocket.send_json({"error": error_msg})
-                except Exception:
-                    pass
+                except Exception as send_err:
+                    logger.debug(f"Failed to send error to WebSocket: {send_err}")
                 return
 
     streamer = scrcpy_streamers[device_id]
@@ -243,8 +259,8 @@ async def video_stream_ws(
                 stream_failed = True
                 try:
                     await websocket.send_json({"error": f"Stream error: {str(e)}"})
-                except Exception:
-                    pass
+                except Exception as send_err:
+                    logger.debug(f"Failed to send error to WebSocket: {send_err}")
                 break
 
     except WebSocketDisconnect:
@@ -254,8 +270,8 @@ async def video_stream_ws(
         stream_failed = True
         try:
             await websocket.send_json({"error": str(e)})
-        except Exception:
-            pass
+        except Exception as send_err:
+            logger.debug(f"Failed to send error to WebSocket: {send_err}")
 
     if stream_failed:
         async with scrcpy_locks[device_id]:

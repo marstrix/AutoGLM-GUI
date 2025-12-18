@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import {
+  connectWifi,
+  disconnectWifi,
   listDevices,
   getConfig,
   saveConfig,
@@ -10,6 +12,7 @@ import {
 } from '../api';
 import { DeviceSidebar } from '../components/DeviceSidebar';
 import { DevicePanel } from '../components/DevicePanel';
+import { Toast, type ToastType } from '../components/Toast';
 
 export const Route = createFileRoute('/chat')({
   component: ChatComponent,
@@ -19,6 +22,15 @@ function ChatComponent() {
   // 设备列表和当前选中设备
   const [devices, setDevices] = useState<Device[]>([]);
   const [currentDeviceId, setCurrentDeviceId] = useState<string>('');
+  const [toast, setToast] = useState<{
+    message: string;
+    type: ToastType;
+    visible: boolean;
+  }>({ message: '', type: 'info', visible: false });
+
+  const showToast = (message: string, type: ToastType = 'info') => {
+    setToast({ message, type, visible: true });
+  };
 
   // 全局配置（所有设备共享）
   const [config, setConfig] = useState<ConfigSaveRequest | null>(null);
@@ -64,19 +76,47 @@ function ChatComponent() {
     const loadDevices = async () => {
       try {
         const response = await listDevices();
-        setDevices(response.devices);
+
+        // 过滤重复设备：如果同一个序列号有 USB 和 WiFi 连接，优先保留 WiFi
+        const deviceMap = new Map<string, Device>();
+        const serialMap = new Map<string, Device[]>(); // 按序列号分组
+
+        // 第一步：按序列号分组设备
+        for (const device of response.devices) {
+          if (device.serial) {
+            const group = serialMap.get(device.serial) || [];
+            group.push(device);
+            serialMap.set(device.serial, group);
+          } else {
+            // 没有序列号的设备直接加入结果
+            deviceMap.set(device.id, device);
+          }
+        }
+
+        // 第二步：对于同一序列号的设备，优先选择 WiFi 连接
+        Array.from(serialMap.values()).forEach(devices => {
+          // 优先选择 remote 类型的设备
+          const remoteDevice = devices.find(
+            (d: Device) => d.connection_type === 'remote'
+          );
+          const selectedDevice = remoteDevice || devices[0];
+          deviceMap.set(selectedDevice.id, selectedDevice);
+        });
+
+        const filteredDevices = Array.from(deviceMap.values());
+        setDevices(filteredDevices);
 
         // 自动选择第一个设备（如果当前没有选中设备）
-        if (response.devices.length > 0 && !currentDeviceId) {
-          setCurrentDeviceId(response.devices[0].id);
+        if (filteredDevices.length > 0 && !currentDeviceId) {
+          setCurrentDeviceId(filteredDevices[0].id);
         }
 
         // ✅ 新增：处理当前设备被移除的情况
         if (
           currentDeviceId &&
-          !response.devices.find(d => d.id === currentDeviceId)
+          !filteredDevices.find(d => d.id === currentDeviceId)
         ) {
-          setCurrentDeviceId(response.devices[0]?.id || '');
+          setCurrentDeviceId(filteredDevices[0]?.id || '');
         }
       } catch (error) {
         console.error('Failed to load devices:', error);
@@ -121,8 +161,49 @@ function ChatComponent() {
     }
   };
 
+  const handleConnectWifi = async (deviceId: string) => {
+    try {
+      const res = await connectWifi({ device_id: deviceId });
+      if (res.success && res.device_id) {
+        // 刷新列表后切换到新的 WiFi 设备 ID
+        setCurrentDeviceId(res.device_id);
+        showToast('WiFi 连接成功！', 'success');
+        // 注意：不需要手动刷新，useEffect 会自动刷新并过滤
+      } else if (!res.success) {
+        showToast(res.message || res.error || '连接失败', 'error');
+        console.error('Connect WiFi failed:', res.message || res.error);
+      }
+    } catch (e) {
+      showToast('连接 WiFi 时发生错误', 'error');
+      console.error('Connect WiFi error:', e);
+    }
+  };
+
+  const handleDisconnectWifi = async (deviceId: string) => {
+    try {
+      const res = await disconnectWifi(deviceId);
+      if (res.success) {
+        showToast('WiFi 已断开', 'success');
+        // 注意：不需要手动刷新，useEffect 会自动刷新并过滤
+        // 如果当前设备被断开，useEffect 会自动切换到其他设备
+      } else {
+        showToast(res.message || res.error || '断开失败', 'error');
+      }
+    } catch (e) {
+      showToast('断开 WiFi 时发生错误', 'error');
+      console.error('Disconnect WiFi error:', e);
+    }
+  };
+
   return (
     <div className="h-full flex relative min-h-0">
+      {toast.visible && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+        />
+      )}
       {/* Config Modal */}
       {showConfig && (
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -263,6 +344,8 @@ function ChatComponent() {
         currentDeviceId={currentDeviceId}
         onSelectDevice={setCurrentDeviceId}
         onOpenConfig={() => setShowConfig(true)}
+        onConnectWifi={handleConnectWifi}
+        onDisconnectWifi={handleDisconnectWifi}
       />
 
       {/* 右侧主内容区 - 多实例架构 */}

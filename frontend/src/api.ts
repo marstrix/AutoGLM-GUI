@@ -6,6 +6,7 @@ export interface Device {
   status: string;
   connection_type: string;
   is_initialized: boolean;
+  serial?: string; // 设备真实序列号
 }
 
 export interface DeviceListResponse {
@@ -144,9 +145,55 @@ export interface TouchUpResponse {
   error?: string;
 }
 
+export interface WiFiConnectRequest {
+  device_id?: string | null;
+  port?: number;
+}
+
+export interface WiFiConnectResponse {
+  success: boolean;
+  message: string;
+  device_id?: string;
+  address?: string;
+  error?: string;
+}
+
+export interface WiFiDisconnectResponse {
+  success: boolean;
+  message: string;
+  error?: string;
+}
+
 export async function listDevices(): Promise<DeviceListResponse> {
   const res = await axios.get<DeviceListResponse>('/api/devices');
   return res.data;
+}
+
+export async function getDevices(): Promise<Device[]> {
+  const response = await axios.get<DeviceListResponse>('/api/devices');
+  return response.data.devices;
+}
+
+export async function connectWifi(
+  payload: WiFiConnectRequest
+): Promise<WiFiConnectResponse> {
+  const res = await axios.post<WiFiConnectResponse>(
+    '/api/devices/connect_wifi',
+    payload
+  );
+  return res.data;
+}
+
+export async function disconnectWifi(
+  deviceId: string
+): Promise<WiFiDisconnectResponse> {
+  const response = await axios.post<WiFiDisconnectResponse>(
+    '/api/devices/disconnect_wifi',
+    {
+      device_id: deviceId,
+    }
+  );
+  return response.data;
 }
 
 export async function initAgent(

@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from AutoGLM_GUI.adb_plus import check_device_available
 from AutoGLM_GUI.logger import logger
 from AutoGLM_GUI.platform_utils import is_windows, run_cmd_silently, spawn_process
 
@@ -94,7 +95,12 @@ class ScrcpyStreamer:
         logger.debug("Cleared NAL read buffer")
 
         try:
-            # 0. Kill existing scrcpy server processes on device
+            # 0. Check device availability first
+            logger.info(f"Checking device {self.device_id} availability...")
+            await check_device_available(self.device_id)
+            logger.info(f"Device {self.device_id} is available")
+
+            # 1. Kill existing scrcpy server processes on device
             logger.info("Cleaning up existing scrcpy processes...")
             await self._cleanup_existing_server()
 

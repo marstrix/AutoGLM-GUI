@@ -5,6 +5,7 @@ import { getStatus } from '../api';
 import { Separator } from '@/components/ui/separator';
 import { Github, Globe } from 'lucide-react';
 import { useLocale } from '../lib/i18n-context';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -41,6 +42,11 @@ function Footer() {
             <Globe className="w-4 h-4" />
             {localeName}
           </button>
+          <Separator
+            orientation="vertical"
+            className="h-4 bg-slate-200 dark:bg-slate-700"
+          />
+          <ThemeToggle />
           <Separator
             orientation="vertical"
             className="h-4 bg-slate-200 dark:bg-slate-700"

@@ -285,7 +285,7 @@ function ChatComponent() {
                             (preset.name === 'custom' &&
                               tempConfig.base_url === ''))
                             ? 'text-[#1d9bf0]'
-                            : 'text-slate-400'
+                            : 'text-slate-400 dark:text-slate-500'
                         }`}
                       />
                       <span className="font-medium text-sm text-slate-900 dark:text-slate-100">
@@ -403,9 +403,9 @@ function ChatComponent() {
       />
 
       {/* Main content */}
-      <div className="flex-1 relative flex items-stretch justify-center min-h-0 px-4 py-4">
+      <div className="flex-1 flex items-stretch justify-center min-h-0 px-4 py-4">
         {devices.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+          <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
             <div className="text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 mx-auto mb-4">
                 <svg
@@ -434,7 +434,7 @@ function ChatComponent() {
           devices.map(device => (
             <div
               key={device.id}
-              className={`w-full h-full flex items-stretch justify-center min-h-0 ${
+              className={`w-full max-w-7xl flex items-stretch justify-center min-h-0 ${
                 device.id === currentDeviceId ? '' : 'hidden'
               }`}
             >

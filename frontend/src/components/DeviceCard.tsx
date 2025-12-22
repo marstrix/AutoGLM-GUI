@@ -149,8 +149,8 @@ export function DeviceCard({
                 disabled={loading}
                 className={`h-8 w-8 rounded-full ${
                   isActive
-                    ? 'text-white hover:bg-white/20'
-                    : 'text-slate-400 hover:text-[#1d9bf0] hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'bg-[#1d9bf0]/10 text-[#1d9bf0] hover:bg-[#1d9bf0]/20'
+                    : 'text-slate-400 dark:text-slate-500 hover:text-[#1d9bf0] dark:hover:text-[#1d9bf0] hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
                 title={t.deviceCard.connectViaWifi}
               >
@@ -170,8 +170,8 @@ export function DeviceCard({
                 disabled={loading}
                 className={`h-8 w-8 rounded-full ${
                   isActive
-                    ? 'text-white hover:bg-white/20'
-                    : 'text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                    : 'text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
                 title={t.deviceCard.disconnectWifi}
               >
@@ -188,7 +188,9 @@ export function DeviceCard({
               <Badge
                 variant="success"
                 className={`text-xs ${
-                  isActive ? 'bg-white/20 text-white' : ''
+                  isActive
+                    ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                    : ''
                 }`}
               >
                 <CheckCircle2 className="w-3 h-3 mr-1" />

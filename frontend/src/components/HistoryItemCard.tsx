@@ -38,7 +38,10 @@ export function HistoryItemCard({ item, onSelect }: HistoryItemCardProps) {
           </div>
 
           {/* Status Badge */}
-          <Badge variant={item.success ? 'success' : 'destructive'} className="shrink-0">
+          <Badge
+            variant={item.success ? 'success' : 'destructive'}
+            className="shrink-0"
+          >
             {item.success ? (
               <>
                 <CheckCircle2 className="w-3 h-3 mr-1" />

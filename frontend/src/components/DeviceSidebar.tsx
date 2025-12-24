@@ -7,7 +7,6 @@ import {
   Plug,
   Plus,
   Info,
-  History,
 } from 'lucide-react';
 import { DeviceCard } from './DeviceCard';
 import { Button } from '@/components/ui/button';
@@ -46,7 +45,6 @@ interface DeviceSidebarProps {
   currentDeviceId: string;
   onSelectDevice: (deviceId: string) => void;
   onOpenConfig: () => void;
-  onOpenHistory: () => void;
   onConnectWifi: (deviceId: string) => void;
   onDisconnectWifi: (deviceId: string) => void;
 }
@@ -56,7 +54,6 @@ export function DeviceSidebar({
   currentDeviceId,
   onSelectDevice,
   onOpenConfig,
-  onOpenHistory,
   onConnectWifi,
   onDisconnectWifi,
 }: DeviceSidebarProps) {
@@ -278,14 +275,6 @@ export function DeviceSidebar({
           >
             <Settings className="h-4 w-4" />
             {t.deviceSidebar.settings}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={onOpenHistory}
-            className="w-full justify-start gap-2 rounded-full border-slate-200 dark:border-slate-700"
-          >
-            <History className="h-4 w-4" />
-            {t.deviceSidebar.history}
           </Button>
         </div>
 

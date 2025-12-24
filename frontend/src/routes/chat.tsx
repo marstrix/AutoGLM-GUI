@@ -12,9 +12,7 @@ import {
 } from '../api';
 import { DeviceSidebar } from '../components/DeviceSidebar';
 import { DevicePanel } from '../components/DevicePanel';
-import { HistoryDialog } from '../components/HistoryDialog';
 import { Toast, type ToastType } from '../components/Toast';
-import type { HistoryItem } from '../types/history';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -87,10 +85,6 @@ function ChatComponent() {
 
   const [config, setConfig] = useState<ConfigSaveRequest | null>(null);
   const [showConfig, setShowConfig] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [historyDeviceId, setHistoryDeviceId] = useState('');
-  const [historyDeviceName, setHistoryDeviceName] = useState('');
-  const [restoreHistory, setRestoreHistory] = useState<HistoryItem | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
   const [tempConfig, setTempConfig] = useState({
     base_url: '',
@@ -236,21 +230,6 @@ function ChatComponent() {
       showToast(t.toasts.wifiDisconnectError, 'error');
       console.error('Disconnect WiFi error:', e);
     }
-  };
-
-  const handleOpenHistory = () => {
-    if (currentDeviceId) {
-      const device = devices.find(d => d.id === currentDeviceId);
-      setHistoryDeviceId(currentDeviceId);
-      setHistoryDeviceName(device?.model || 'Unknown Device');
-      setShowHistory(true);
-    }
-  };
-
-  const handleSelectHistory = (item: HistoryItem) => {
-    setRestoreHistory(item);
-    // 清空 restoreHistory，以便下次点击可以触发 useEffect
-    setTimeout(() => setRestoreHistory(null), 100);
   };
 
   return (
@@ -429,22 +408,12 @@ function ChatComponent() {
         </DialogContent>
       </Dialog>
 
-      {/* History Dialog */}
-      <HistoryDialog
-        open={showHistory}
-        onOpenChange={setShowHistory}
-        deviceId={historyDeviceId}
-        deviceName={historyDeviceName}
-        onSelectHistory={handleSelectHistory}
-      />
-
       {/* Sidebar */}
       <DeviceSidebar
         devices={devices}
         currentDeviceId={currentDeviceId}
         onSelectDevice={setCurrentDeviceId}
         onOpenConfig={() => setShowConfig(true)}
-        onOpenHistory={handleOpenHistory}
         onConnectWifi={handleConnectWifi}
         onDisconnectWifi={handleDisconnectWifi}
       />
@@ -491,7 +460,6 @@ function ChatComponent() {
                 config={config}
                 isVisible={device.id === currentDeviceId}
                 isConfigured={!!config?.base_url}
-                restoreHistory={restoreHistory}
               />
             </div>
           ))

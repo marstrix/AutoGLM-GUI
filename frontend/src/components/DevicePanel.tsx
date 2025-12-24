@@ -13,6 +13,7 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  History,
 } from 'lucide-react';
 import { ScrcpyPlayer } from './ScrcpyPlayer';
 import type {
@@ -26,9 +27,21 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useTranslation } from '../lib/i18n-context';
-import { createHistoryItem, saveHistoryItem } from '../utils/history';
+import {
+  createHistoryItem,
+  saveHistoryItem,
+  loadHistoryItems,
+  clearHistory,
+} from '../utils/history';
 import type { HistoryItem } from '../types/history';
+import { HistoryItemCard } from './HistoryItemCard';
 
 interface Message {
   id: string;
@@ -54,7 +67,6 @@ interface DevicePanelProps {
   config: GlobalConfig | null;
   isVisible: boolean;
   isConfigured: boolean;
-  restoreHistory?: HistoryItem | null;
 }
 
 export function DevicePanel({
@@ -62,7 +74,6 @@ export function DevicePanel({
   deviceName,
   config,
   isConfigured,
-  restoreHistory,
 }: DevicePanelProps) {
   const t = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -80,6 +91,8 @@ export function DevicePanel({
   const [feedbackType, setFeedbackType] = useState<
     'tap' | 'swipe' | 'error' | 'success'
   >('success');
+  const [showHistoryPopover, setShowHistoryPopover] = useState(false);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
   const feedbackTimeoutRef = useRef<number | null>(null);
 
   const showFeedback = (
@@ -171,32 +184,42 @@ export function DevicePanel({
     }
   }, [isConfigured, config, initialized, handleInit]);
 
-  // Restore history when selected
+  // Load history items when popover opens
   useEffect(() => {
-    if (restoreHistory) {
-      // 将 HistoryItem 转换为 Message 格式
-      const userMessage: Message = {
-        id: `${restoreHistory.id}-user`,
-        role: 'user',
-        content: restoreHistory.taskText,
-        timestamp: restoreHistory.startTime,
-      };
-
-      const agentMessage: Message = {
-        id: `${restoreHistory.id}-agent`,
-        role: 'agent',
-        content: restoreHistory.finalMessage,
-        timestamp: restoreHistory.endTime,
-        steps: restoreHistory.steps,
-        success: restoreHistory.success,
-        thinking: restoreHistory.thinking,
-        actions: restoreHistory.actions,
-        isStreaming: false,
-      };
-
-      setMessages([userMessage, agentMessage]);
+    if (showHistoryPopover) {
+      const items = loadHistoryItems(deviceId);
+      setHistoryItems(items);
     }
-  }, [restoreHistory]);
+  }, [showHistoryPopover, deviceId]);
+
+  const handleSelectHistory = (item: HistoryItem) => {
+    const userMessage: Message = {
+      id: `${item.id}-user`,
+      role: 'user',
+      content: item.taskText,
+      timestamp: item.startTime,
+    };
+    const agentMessage: Message = {
+      id: `${item.id}-agent`,
+      role: 'agent',
+      content: item.finalMessage,
+      timestamp: item.endTime,
+      steps: item.steps,
+      success: item.success,
+      thinking: item.thinking,
+      actions: item.actions,
+      isStreaming: false,
+    };
+    setMessages([userMessage, agentMessage]);
+    setShowHistoryPopover(false);
+  };
+
+  const handleClearHistory = () => {
+    if (confirm(t.history.clearAllConfirm)) {
+      clearHistory(deviceId);
+      setHistoryItems([]);
+    }
+  };
 
   const handleSend = useCallback(async () => {
     const inputValue = input.trim();
@@ -428,6 +451,67 @@ export function DevicePanel({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* History button with Popover */}
+            <Popover
+              open={showHistoryPopover}
+              onOpenChange={setShowHistoryPopover}
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                  title={t.history.title}
+                >
+                  <History className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+
+              <PopoverContent className="w-96 p-0" align="end" sideOffset={8}>
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+                  <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                    {t.history.title}
+                  </h3>
+                  {historyItems.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearHistory}
+                      className="h-7 text-xs"
+                    >
+                      {t.history.clearAll}
+                    </Button>
+                  )}
+                </div>
+
+                {/* Scrollable content */}
+                <ScrollArea className="h-[400px]">
+                  <div className="p-4 space-y-2">
+                    {historyItems.length > 0 ? (
+                      historyItems.map(item => (
+                        <HistoryItemCard
+                          key={item.id}
+                          item={item}
+                          onSelect={handleSelectHistory}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <History className="h-12 w-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {t.history.noHistory}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          {t.history.noHistoryDescription}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+
             {!isConfigured ? (
               <Badge variant="warning">
                 <AlertCircle className="w-3 h-3 mr-1" />
@@ -567,9 +651,7 @@ export function DevicePanel({
                 ) : (
                   <div className="max-w-[75%]">
                     <div className="chat-bubble-user px-4 py-3">
-                      <p className="whitespace-pre-wrap">
-                        {message.content}
-                      </p>
+                      <p className="whitespace-pre-wrap">{message.content}</p>
                     </div>
                     <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 text-right">
                       {message.timestamp.toLocaleTimeString()}

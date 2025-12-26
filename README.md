@@ -1,8 +1,12 @@
+<div align="center">
+
+<img src="https://github.com/user-attachments/assets/bbdaeb1c-b7f2-4a4b-a11a-34db4de0ba12" alt="autoglm-gui" width="300">
+
 # AutoGLM-GUI
 
 AutoGLM 手机助手的现代化 Web 图形界面 - 让 AI 自动化操作 Android 设备变得简单
 
-**🎉 Android 11+ 设备现已支持完全无线连接，扫码即配对，无需数据线！**
+**🎉 Android 11+ 设备现已支持完全无线连接，扫码即配对，无需数据线！🎉**
 
 ![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)
@@ -11,6 +15,9 @@ AutoGLM 手机助手的现代化 Web 图形界面 - 让 AI 自动化操作 Andro
   <a href="https://qm.qq.com/q/J5eAs9tn0W" target="__blank">
     <strong>欢迎加入讨论交流群</strong>
   </a>
+
+</div>
+
 ## ✨ 特性
 
 - **完全无线配对** - 🆕 支持 Android 11+ 二维码扫码配对，无需数据线即可连接设备
